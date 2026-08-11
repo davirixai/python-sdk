@@ -115,6 +115,26 @@ faqat transport/protokol uchun (`errors.py`).
 Kutish budjeti tugasa — `ExecutionTimeout`: ijro **serverda davom etmoqda**,
 `dx.get(execution_id)` bilan kuzatishda davom eting.
 
+## Manzil (`base_url`)
+
+Default — `https://api.davirix.com`. **Uch darajada** o'zgartiriladi,
+ustunlik tartibi bilan:
+
+```python
+Davirix(api_key="…", base_url="http://localhost:8001")   # 1. konstruktor — eng kuchli
+```
+```bash
+export DAVIRIX_BASE_URL=https://api.eu.davirix.com        # 2. muhit
+```
+```
+                                                          # 3. default
+```
+
+⚡ **Nega uch daraja:** manzil kelajakda o'zgarishi mumkin (mintaqaviy
+endpoint, on-prem o'rnatma, lokal stend). Konstruktor argumenti test
+uchun, env — deployment uchun, default — hech narsa sozlanmaganda.
+Mijoz kodini o'zgartirmasdan manzilni almashtira olishi kerak.
+
 ## Sir
 
 `api_key` — konstruktor argumenti yoki `DAVIRIX_API_KEY`. Kodga yozilmaydi,
