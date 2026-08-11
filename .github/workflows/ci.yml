@@ -1,0 +1,49 @@
+name: ci
+
+# SDK testlari KONTRAKT fixture'laridan oziqlanadi. Shu bois CI kontraktlarni
+# TEGGA qulflab yuklaydi: `main` ga bog'lanish taqiq (contracts/README).
+# Teg ko'tarilganda testlar qizil bo'lsa — bu drift, va u JIM o'tmaydi.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Haftalik: kontrakt tegi yangilanmasa ham SDK yashilligi tekshiriladi.
+    - cron: "0 6 * * 1"
+
+env:
+  CONTRACTS_TAG: v1.7.0
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kontraktlarni tegga qulflab olish
+        uses: actions/checkout@v4
+        with:
+          repository: davirixai/contracts
+          ref: ${{ env.CONTRACTS_TAG }}
+          path: .contracts
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: pip install -e ".[dev]"
+
+      - name: Testlar (kontrakt fixture'lari bilan)
+        env:
+          DAVIRIX_CONTRACTS_DIR: ${{ github.workspace }}/.contracts
+        run: pytest -q
+
+      - name: Mutatsiya sinovi (qoidalar haqiqatan qo'riqlanadimi)
+        if: matrix.python-version == '3.12'
+        env:
+          DAVIRIX_CONTRACTS_DIR: ${{ github.workspace }}/.contracts
+        run: python scripts/mutation_check.py

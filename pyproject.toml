@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "davirix"
+version = "0.1.0"
+description = "Davirix Agent Platform uchun rasmiy Python SDK — 'completed' hech qachon 'bajarildi' degani emas"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Davirix" }]
+keywords = ["davirix", "agent", "sdk", "operations", "idempotency"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+
+# YAGONA runtime bog'liqlik. `pydantic` ATAYLAB YO'Q: SDK mijoz ilovasiga
+# o'z pydantic avlodini majburlamaydi (v1/v2 to'qnashuvi eng ko'p uchraydigan
+# SDK muammosi), ijro javobi esa sakkizta maydonli tekis konvert — uni
+# dataclass bilan o'qish qo'lda va SHAFFOF. Validatsiya kontrakt sxemasi
+# bilan TESTDA qilinadi (jsonschema — dev bog'liqligi), runtime'da emas.
+dependencies = ["httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jsonschema>=4.20",
+]
+
+[project.urls]
+Homepage = "https://davirix.com"
+Source = "https://github.com/davirixai/python-sdk"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/davirix"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error::DeprecationWarning"]
