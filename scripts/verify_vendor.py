@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Vendor nusxasini tekshiradi — ikki daraja.
 
+⚠ PLATFORMA: kalitlar POSIX shaklida (`as_posix`) va chiqishda EMOJI YO'Q.
+   Ikkalasi ham Windows CI da HAQIQIY nosozlik bergan (2026-08-12):
+   `str(PurePath)` u yerda `\\` beradi -> 50 kalitning hammasi mos kelmadi;
+   `cp1252` konsoli esa `\u274c` ni chiqara olmay skriptni qulatdi va
+   ASL xatoni YASHIRDI. Sof-ASCII chiqish shuning uchun.
+
 ⚠ IKKI SAVOL ARALASHTIRILMAYDI:
 
   1. «Nusxa buzilmaganmi?»  — digest bo'yicha, HAR JOYDA ishlaydi.
@@ -32,7 +38,9 @@ def digests(root: Path) -> dict[str, str]:
     out: dict[str, str] = {}
     for p in sorted(root.rglob("*")):
         if p.is_file() and p.name != "VENDOR.json":
-            out[str(p.relative_to(root))] = hashlib.sha256(p.read_bytes()).hexdigest()
+            # ⚠ `as_posix()` SHART: Windows'da `str(PurePath)` `\\` beradi va
+            # Linux'da yasalgan manifest bilan HECH BIR kalit mos kelmaydi.
+            out[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
     return out
 
 
@@ -55,14 +63,14 @@ def main() -> int:
             if recorded.get(name) != actual.get(name):
                 kind = ("qo'shilgan" if name not in recorded else
                         "o'chirilgan" if name not in actual else "o'zgargan")
-                print(f"  ❌ {kind}: {name}")
+                print(f"  [FARQ] {kind}: {name}")
         print("VENDOR NUSXASI BUZILGAN — manifest bilan mos emas.", file=sys.stderr)
         return 1
-    print(f"✅ nusxa butun — {len(recorded)} fayl, manifest bilan mos")
+    print(f"[OK] nusxa butun — {len(recorded)} fayl, manifest bilan mos")
 
     # --- 2-daraja: kanonik manba bilan ---
     if args.canonical is None:
-        print(f"⚠ KANONIK TEKSHIRUV YURGIZILMADI — manba berilmadi.")
+        print(f"[!] KANONIK TEKSHIRUV YURGIZILMADI — manba berilmadi.")
         print(f"  Nusxa `{manifest['source']}@{manifest['tag']}` dan olingan deb"
               f" QAYD ETILGAN, lekin bu YERDA tasdiqlanmadi.")
         print(f"  Tasdiqlash: python scripts/verify_vendor.py --canonical <contracts>")
@@ -74,17 +82,17 @@ def main() -> int:
         return 2
     farq = []
     for name in sorted(recorded):
-        cand = src / name
+        cand = src.joinpath(*name.split("/"))
         if not cand.is_file():
-            farq.append(f"  ❌ manbada YO'Q: {name}")
+            farq.append(f"  [FARQ] manbada YO'Q: {name}")
         elif hashlib.sha256(cand.read_bytes()).hexdigest() != recorded[name]:
-            farq.append(f"  ❌ farq qiladi: {name}")
+            farq.append(f"  [FARQ] farq qiladi: {name}")
     if farq:
         print("\n".join(farq))
         print(f"NUSXA KANONIK MANBADAN AJRALGAN ({manifest['tag']}).", file=sys.stderr)
         print("Tuzatish: nusxani qayta oling va VENDOR.json ni yangilang.", file=sys.stderr)
         return 1
-    print(f"✅ kanonik manba bilan mos — {manifest['source']}@{manifest['tag']}")
+    print(f"[OK] kanonik manba bilan mos — {manifest['source']}@{manifest['tag']}")
     return 0
 
 
