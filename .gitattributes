@@ -1,0 +1,10 @@
+# ⚠ VENDOR NUSXASI — EOL O'ZGARTIRISHI TAQIQ.
+#
+# `scripts/verify_vendor.py` fayllarni sha256 BAYT darajasida tekshiradi.
+# Windows'da git default `core.autocrlf=true` bilan LF -> CRLF qiladi, ya'ni
+# baytlar o'zgaradi va digest JIMGINA buziladi — nusxa aslida to'g'ri bo'lsa
+# ham CI qizil beradi. `-text` konvertatsiyani butunlay o'chiradi.
+tests/contracts/** -text
+
+# Qolgan matn fayllari repoda LF bo'lib qoladi (platformalar orasida barqaror).
+* text=auto eol=lf
