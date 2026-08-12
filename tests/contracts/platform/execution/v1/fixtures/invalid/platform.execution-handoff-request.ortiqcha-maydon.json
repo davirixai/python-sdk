@@ -1,0 +1,6 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "target": {"graph_id": "mkbank-legal-main"},
+  "task": {"type": "message", "text": "Chuqurlikni tashqaridan uydirish urinishi"},
+  "handoff_depth": 0
+}

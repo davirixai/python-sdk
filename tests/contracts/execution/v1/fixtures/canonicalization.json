@@ -1,0 +1,191 @@
+{
+  "cases": [
+    {
+      "name": "maydon_tartibi",
+      "why": "Maydon tartibi kalitni o'zgartirmaydi",
+      "params": {
+        "amount": 100,
+        "currency": "UZS",
+        "to": "order-42"
+      },
+      "canonical": "{\"amount\":100,\"currency\":\"UZS\",\"to\":\"order-42\"}",
+      "digest": "d20dcba98ca6c8d0bbff683945bc11762bf92101e7dacc0a6fff4fca2ba928e6"
+    },
+    {
+      "name": "maydon_tartibi_teskari",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "amount": 100,
+        "currency": "UZS",
+        "to": "order-42"
+      },
+      "canonical": "{\"amount\":100,\"currency\":\"UZS\",\"to\":\"order-42\"}",
+      "digest": "d20dcba98ca6c8d0bbff683945bc11762bf92101e7dacc0a6fff4fca2ba928e6"
+    },
+    {
+      "name": "trailing_zero",
+      "why": "100.00 == 100 — tasdiq buzilmasligi kerak",
+      "params": {
+        "amount": 100
+      },
+      "canonical": "{\"amount\":100}",
+      "digest": "4d4bbe59c6aad22442cde199a6a8a5f034405fcd78fb5a81c24ef249de1c45f1"
+    },
+    {
+      "name": "butun_son",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "amount": 100
+      },
+      "canonical": "{\"amount\":100}",
+      "digest": "4d4bbe59c6aad22442cde199a6a8a5f034405fcd78fb5a81c24ef249de1c45f1"
+    },
+    {
+      "name": "valyuta_kichik_harf",
+      "why": "uzs == UZS — aks holda bir to'lov ikki marta ketardi",
+      "params": {
+        "amount": 5000,
+        "currency": "uzs"
+      },
+      "canonical": "{\"amount\":5000,\"currency\":\"UZS\"}",
+      "digest": "0848d0b45903de005ebd04af00aca85ad5054c485e3d4aa8d279a5d0fbd230e6"
+    },
+    {
+      "name": "valyuta_katta_harf",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "amount": 5000,
+        "currency": "UZS"
+      },
+      "canonical": "{\"amount\":5000,\"currency\":\"UZS\"}",
+      "digest": "0848d0b45903de005ebd04af00aca85ad5054c485e3d4aa8d279a5d0fbd230e6"
+    },
+    {
+      "name": "valyuta_boshqa",
+      "why": "USD != UZS — almashinuv SEZILISHI kerak",
+      "params": {
+        "amount": 5000,
+        "currency": "USD"
+      },
+      "canonical": "{\"amount\":5000,\"currency\":\"USD\"}",
+      "digest": "40cf876ce4bd3e3ac3ed0ff152c00f15d0af7812647b04301579c857e6a527a5"
+    },
+    {
+      "name": "boshliqlar",
+      "why": "Chekka va ketma-ket bo'shliqlar normallashadi",
+      "params": {
+        "name": "  Ali   Vali\t"
+      },
+      "canonical": "{\"name\":\"Ali Vali\"}",
+      "digest": "fb044cc89aa7a0744716399dd3ac14a482361b386147ff470a7f7d431bd6732d"
+    },
+    {
+      "name": "boshliqlar_toza",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "name": "Ali Vali"
+      },
+      "canonical": "{\"name\":\"Ali Vali\"}",
+      "digest": "fb044cc89aa7a0744716399dd3ac14a482361b386147ff470a7f7d431bd6732d"
+    },
+    {
+      "name": "null_maydon",
+      "why": "null == maydon yo'q",
+      "params": {
+        "amount": 100,
+        "note": null
+      },
+      "canonical": "{\"amount\":100}",
+      "digest": "4d4bbe59c6aad22442cde199a6a8a5f034405fcd78fb5a81c24ef249de1c45f1"
+    },
+    {
+      "name": "maydon_yoq",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "amount": 100
+      },
+      "canonical": "{\"amount\":100}",
+      "digest": "4d4bbe59c6aad22442cde199a6a8a5f034405fcd78fb5a81c24ef249de1c45f1"
+    },
+    {
+      "name": "royxat_tartibi",
+      "why": "Ro'yxatda tartib MA'NOLI — saralanmaydi",
+      "params": {
+        "to": [
+          "a",
+          "b"
+        ]
+      },
+      "canonical": "{\"to\":[\"a\",\"b\"]}",
+      "digest": "2bceb9e1a7f5867dcb4865bdebf8993d056f7ef7e2d70570eb36c50028c3ff83"
+    },
+    {
+      "name": "royxat_teskari",
+      "why": "Yuqoridagidan FARQ qilishi kerak",
+      "params": {
+        "to": [
+          "b",
+          "a"
+        ]
+      },
+      "canonical": "{\"to\":[\"b\",\"a\"]}",
+      "digest": "932e61e83c139bbdf38b4d8ea30b83e20bd6cdf9f594e800a16abe02ff4348cb"
+    },
+    {
+      "name": "ichki_obyekt",
+      "why": "Ichki obyekt ham saralanadi",
+      "params": {
+        "m": {
+          "a": 2,
+          "z": 1
+        }
+      },
+      "canonical": "{\"m\":{\"a\":2,\"z\":1}}",
+      "digest": "5addcb092e81581518077d55f561e062722bf0a7c3545a41f85bcada5e2e5638"
+    },
+    {
+      "name": "bosh_obyekt",
+      "why": "Bo'sh parametrlar",
+      "params": {},
+      "canonical": "{}",
+      "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "mantiqiy_va_son",
+      "why": "bool va manfiy son",
+      "params": {
+        "delta": -0.5,
+        "flag": true
+      },
+      "canonical": "{\"delta\":-0.5,\"flag\":true}",
+      "digest": "ff7167923cdc6e960973a42e724e51ab618c0ee53422fb5d303783364a691e2d"
+    },
+    {
+      "name": "katta_summa",
+      "why": "2^53 gacha butun son aniq",
+      "params": {
+        "amount": 9007199254740991
+      },
+      "canonical": "{\"amount\":9007199254740991}",
+      "digest": "600cde165157e13927b1aa87081359b8842e61946d2fc5e97eb712c7c227fffd"
+    },
+    {
+      "name": "unicode_nfc",
+      "why": "Birlashtirilgan va ajratilgan shakl bir xil",
+      "params": {
+        "name": "é"
+      },
+      "canonical": "{\"name\":\"é\"}",
+      "digest": "2f16b8477146a1b2ba7d6bb7cf7c9979c191cc2838a107dbf5f0d920b4cb3ba1"
+    },
+    {
+      "name": "unicode_nfd",
+      "why": "Yuqoridagi bilan AYNI natija",
+      "params": {
+        "name": "é"
+      },
+      "canonical": "{\"name\":\"é\"}",
+      "digest": "2f16b8477146a1b2ba7d6bb7cf7c9979c191cc2838a107dbf5f0d920b4cb3ba1"
+    }
+  ]
+}

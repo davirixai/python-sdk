@@ -1,0 +1,11 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "target": {"agent_id": "legal-agent", "graph_id": "mkbank-legal-main", "graph_version": "1.0.0"},
+  "task": {"type": "message", "text": "Shartnomaning 4.2-bandi bo'yicha risk bahosini bering."},
+  "actor": {"type": "agent", "id": "mkbank-support-main@1.1.0"},
+  "context_refs": [{"type": "deal", "id": "deal_456"}],
+  "budget": {"remaining_ms": 120000, "remaining_iterations": 2},
+  "idempotency_key": "msg_7-legal_handoff",
+  "model_profile_id": "chat-balanced",
+  "variables": {"customer_segment": "sme"}
+}

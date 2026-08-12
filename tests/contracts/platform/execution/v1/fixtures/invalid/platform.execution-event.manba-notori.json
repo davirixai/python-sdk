@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_0123456789abcdef0123456789abcdef",
+  "tenant_id": "t1",
+  "seq": 2,
+  "type": "execution.progress",
+  "at": "2026-08-04T09:00:01Z",
+  "source": "taxmin",
+  "data": {"node": "model_call"}
+}

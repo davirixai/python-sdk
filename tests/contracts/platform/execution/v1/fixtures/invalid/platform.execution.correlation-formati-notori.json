@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_0123456789abcdef0123456789abcdef",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "status": "created",
+  "actor": {"type": "user", "id": "user_1"},
+  "agent_ref": {"agent_template": "simple_agent"},
+  "thread_id": "thr_1",
+  "correlation_id": "corr-123",
+  "created_at": "2026-08-04T09:00:00Z",
+  "updated_at": "2026-08-04T09:00:00Z"
+}

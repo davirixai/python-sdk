@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-platform.local/platform/execution/v1/execution-event",
+  "title": "ExecutionEvent",
+  "description": "Bitta ijro hodisasi — GET /v1/executions/{id}/events ro'yxati va GET /v1/executions/{id}/stream SSE `data` yuki uchun YAGONA shakl (blueprint §18.2). HALOLLIK QOIDASI: `source` maydoni hodisa QANDAY paydo bo'lganini aytadi — `runtime` = ijro paytida KUZATILGAN (vaqt tamg'asi haqiqiy), `derived` = ijro yakunidagi holatdan QAYTA TIKLANGAN (nomlar haqiqiy, vaqt tamg'asi tiklash payti). Runtime'da per-tool durable hodisa jurnali YO'Q, shuning uchun tool_requested/tool_completed DOIM derived — uydirma hodisa yozilmaydi.",
+  "type": "object",
+  "required": ["schema_version", "execution_id", "tenant_id", "seq", "type", "at", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "execution_id": {"type": "string", "pattern": "^exe_[0-9a-f]{32}$"},
+    "tenant_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Ijro ichida monoton o'suvchi tartib raqami (1 dan). Klient qayta ulanishda `after_seq` bilan davom etadi."
+    },
+    "type": {"$ref": "#/$defs/eventType"},
+    "at": {"type": "string", "format": "date-time"},
+    "source": {
+      "enum": ["runtime", "derived"],
+      "description": "runtime — hodisa sodir bo'lgan paytda yozilgan; derived — yakuniy holatdan tiklangan (vaqt tamg'asi taxminiy)."
+    },
+    "status": {
+      "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution#/$defs/status",
+      "description": "Hodisadan KEYINGI ijro holati (state machine kuzatuvi uchun)."
+    },
+    "data": {
+      "type": "object",
+      "description": "Turga xos yuk. PII/sir HECH QACHON bu yerda emas (tool argumentlari, xabar matni, memory mazmuni chiqmaydi).",
+      "additionalProperties": true,
+      "properties": {
+        "node": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "execution.progress: tugagan graf node nomi (REAL)."
+        },
+        "tool_name": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "execution.tool_requested/tool_completed: tool nomi."
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Ijro tartibidagi tool o'rni."
+        },
+        "interrupt_id": {"type": "string", "maxLength": 64},
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "description": "execution.failed: mashina kodi."
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "execution.cancelled: 'requested_by_actor' kabi kod."
+        },
+        "origin": {
+          "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution#/$defs/origin",
+          "description": "execution.created: ijro qo'zg'atish rejimi (§8.3) — observer-intake telemetriyada shu yerdan ko'rinadi."
+        },
+        "correlation_id": {
+          "type": "string",
+          "pattern": "^cor_[0-9a-f]{32}$",
+          "description": "AR-1: agent↔agent zanjirining yagona trace kaliti."
+        },
+        "parent_execution_id": {
+          "type": "string",
+          "pattern": "^exe_[0-9a-f]{32}$",
+          "description": "execution.created: shu ijroni handoff bilan tug'dirgan ota ijro."
+        },
+        "child_execution_id": {
+          "type": "string",
+          "pattern": "^exe_[0-9a-f]{32}$",
+          "description": "execution.handed_off: OTA ijro yozuviga qo'yiladi — topshiriq berilgan BOLA ijro."
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "description": "execution.handed_off / execution.handoff_rejected: zanjirdagi handoff chuqurligi."
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "execution.handed_off: topshiriq berilgan agent identifikatorlari (matn/PII emas).",
+          "properties": {
+            "agent_id": {"type": "string", "maxLength": 128},
+            "graph_id": {"type": "string", "maxLength": 128},
+            "graph_version": {"type": "string", "maxLength": 32},
+            "agent_template": {"type": "string", "maxLength": 128}
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {"$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution#/$defs/executionOperation"},
+          "description": "TERMINAL hodisada (execution.completed/failed/cancelled): shu ijroning yozuv amallari va TASDIQLANGAN taqdiri — GET /v1/executions/{id} dagi `operations` bilan AYNI qiymat. ⚠ NEGA SHU YERDA: SSE'ni kuzatgan mijoz `execution.completed` ni ko'rib oqimni yopadi va boshqa hech qachon GET qilmasligi mumkin — u holda «model javob berdi» ni «amal bajarildi» deb o'qirdi. Oqim va GET bir xil hukmni aytishi SHART, aks holda kafolat transportga qarab o'zgarardi. Oraliq hodisalarda YO'Q: amal taqdiri ijro tugaguncha aniq emas."
+        },
+        "operations_coverage": {
+          "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution#/$defs/operationsCoverage",
+          "description": "TERMINAL hodisada: `operations` ga ishonish mumkinmi. Ledger javob bermasa `operations` bu yerda ham QAYTMAYDI va sabab shu yerda turadi — jim bo'sh massiv oqimda ham taqiqlangan."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["operations_coverage"],
+            "properties": {
+              "operations_coverage": {
+                "required": ["complete"],
+                "properties": {"complete": {"const": false}}
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {"data": {"not": {"required": ["operations"]}}},
+        "description": "GET javobidagi AYNI qoida oqimda ham: qoplama to'liq emas — `operations` yo'q. Ikki transportda ikki xil halollik bo'lmaydi."
+      }
+    }
+  ],
+  "$defs": {
+    "eventType": {
+      "enum": [
+        "execution.created",
+        "execution.started",
+        "execution.progress",
+        "execution.tool_requested",
+        "execution.tool_completed",
+        "execution.waiting_for_approval",
+        "execution.handed_off",
+        "execution.handoff_rejected",
+        "execution.resumed",
+        "execution.completed",
+        "execution.failed",
+        "execution.cancelled"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_ffffffffffffffffffffffffffffffff",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "seq": 5,
+  "type": "execution.cancelled",
+  "at": "2026-08-04T09:00:03Z",
+  "source": "runtime",
+  "status": "cancelled",
+  "data": {"reason": "requested_by_actor"}
+}

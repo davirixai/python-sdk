@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-platform.local/platform/execution/v1/execution-create-request",
+  "title": "ExecutionCreateRequest",
+  "description": "POST /v1/executions so'rov konverti (blueprint §18.1). Bu — Agent Runtime'ning RASMIY tashqi ijro sirti; ichki /v1/chat o'zgarmaydi, executions uni o'raydi. Idempotentlik: (tenant_id, idempotency_key) juftligi BIR ijroni bildiradi — ayni kalit + ayni body qayta kelsa MAVJUD ijro qaytadi (200), ayni kalit + BOSHQA body 409 beradi (jim ustiga yozish YO'Q). Agent tanlash: agent_id (rollout) yoki graph_id[+graph_version] (registry pin) yoki agent_template (kod-shablon) — hech biri berilmasa servis default shabloni ishlaydi.",
+  "type": "object",
+  "required": ["tenant_id", "actor", "input"],
+  "additionalProperties": false,
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Ijro tenanti. Service-JWT'da tenant claim bo'lsa u bilan MOS bo'lishi shart (403) — body qiymati hech qachon yagona authority emas."
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Chaqiruvchi mahsulotdagi ish maydoni (Davirix Work). Runtime uni faqat olib yuradi — marshrutga ta'sir qilmaydi."
+    },
+    "actor": {
+      "$ref": "#/$defs/actor",
+      "description": "Ijroni boshlagan aktor (blueprint §16.1: har execution actor_id ga ega)."
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Rollout (stable/canary/shadow) kaliti. graph_id bilan birga kelishi mumkin: agent_id versiya qarorini, graph_id esa yuklanadigan grafni beradi."
+    },
+    "graph_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Graf registri identifikatori. Berilsa graf platform-core registry'sidan yuklanadi."
+    },
+    "graph_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "AYNAN shu versiya pinlanadi (agent-runtime-binding-contract §4). graph_id'siz berilishi TAQIQ — jim e'tiborsizlik o'rniga 422."
+    },
+    "agent_template": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Kod-shablon nomi (legacy yo'l; graph_id berilganda e'tiborga olinmaydi)."
+    },
+    "input": {
+      "$ref": "#/$defs/input",
+      "description": "Ijro kirishi. MVP'da yagona tur — message."
+    },
+    "context_refs": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/contextRef"},
+      "description": "Chaqiruvchi mahsulotdagi biznes obyektlariga havolalar (deal, thread, case). Runtime ularni ijro yozuvida saqlaydi va telemetriyaga olib yuradi; ma'lumotni O'ZI tortmaydi (Context Builder ruxsat tekshirilgan manbalardan yig'adi — §17.1)."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Tenant ichida unikal takror-himoya kaliti (masalan 'msg_1-sales_agent'). Berilmasa HAR chaqiruv yangi ijro yaratadi."
+    },
+    "thread_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Checkpoint kaliti (suhbat davomi). Berilmasa yangi thread ochiladi."
+    },
+    "model_profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Model profili pin'i (inference-platform registri nomi). Berilmasa graf default'i."
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Memory scoping identifikatori. Berilmasa memory ishlatilmaydi."
+    },
+    "memory_consent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Profil-memory yozuvi uchun rozilik (fail-closed: default false)."
+    },
+    "execution_mode": {
+      "enum": ["active", "shadow"],
+      "default": "active",
+      "description": "shadow — agent tool'larni BAJARMAY faqat taklif qiladi (pilot rejimi)."
+    },
+    "origin": {
+      "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution#/$defs/origin",
+      "description": "AR-1 (ADDITIV): ijro qo'zg'atish rejimi (blueprint §8.3). Berilmasa 'direct' — mavjud chaqiruvchilar uchun xatti-harakat O'ZGARMAYDI. 'observer' — Work'dagi deterministik filtr O'TKAZGAN hodisa: runtime filtrlamaydi va hech qanday shinaga obuna bo'lmaydi, faqat qabul qiladi; bunday ijrolar (tenant, agent) bo'yicha RATE-LIMIT ostida (429 observer_rate_limited) va boshqa ijrolar kabi bekor qilinadi."
+    },
+    "channel": {
+      "enum": ["telegram", "webchat", "whatsapp", "api"],
+      "description": "Kanal identifikatori (telemetriya va handoff emissiyasi uchun). Berilmasa 'api'."
+    },
+    "variables": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {"pattern": "^[A-Za-z0-9_]{1,64}$"},
+      "additionalProperties": {"type": "string", "maxLength": 256},
+      "description": "Kampaniya/kontakt o'zgaruvchilari — modelga DATA sifatida beriladi (instruksiya emas). PII: loglanmaydi."
+    }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["user", "agent", "service", "system"],
+          "description": "Aktor sinfi. Audit va approval-authz shu qiymatga tayanadi."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Aktor identifikatori (chaqiruvchi tizimdagi)."
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "required": ["type", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "message",
+          "description": "MVP'da yagona kirish turi. Yangi tur — yangi const, jim shakl o'zgarishi emas."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768,
+          "description": "Foydalanuvchi xabari."
+        }
+      }
+    },
+    "contextRef": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$",
+          "description": "Obyekt turi (deal, thread, case, task ...) — chaqiruvchi domenidan."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Obyekt identifikatori."
+        }
+      }
+    }
+  }
+}

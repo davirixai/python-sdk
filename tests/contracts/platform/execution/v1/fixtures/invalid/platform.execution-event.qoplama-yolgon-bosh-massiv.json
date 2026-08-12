@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_4b7e2200000000000000000000000001",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "seq": 12,
+  "type": "execution.completed",
+  "at": "2026-08-04T09:00:12Z",
+  "source": "runtime",
+  "status": "completed",
+  "data": {
+    "operations": [],
+    "operations_coverage": {
+      "complete": false,
+      "degraded_reasons": [
+        "ledger_unavailable"
+      ]
+    }
+  }
+}

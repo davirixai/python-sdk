@@ -1,0 +1,602 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-platform.local/platform/execution/v1/execution",
+  "title": "Execution",
+  "description": "Bitta agent ijrosining public ko'rinishi — POST /v1/executions va GET /v1/executions/{id} javobi (blueprint §16 state machine). Holatlar: created → validating → resolving_context → planning → running → waiting_for_tool → waiting_for_approval → running → validating_output → completed. Terminal: completed | failed | cancelled | expired. Invariantlar (§16.1): agent_version ijro davomida O'ZGARMAYDI; completed ijro qayta running BO'LMAYDI; cancel signali yangi tool chaqiruvi boshlanishini to'xtatadi (ishlayotgan tool o'rtasidan uzilmaydi); approval kutayotgan ijro checkpoint'siz qolmaydi (thread_id — o'sha checkpoint kaliti).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "execution_id",
+    "tenant_id",
+    "status",
+    "actor",
+    "agent_ref",
+    "thread_id",
+    "created_at",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "description": "Konvert avlodi. Yangi avlod — yangi satr, jim shakl o'zgarishi emas."
+    },
+    "execution_id": {
+      "type": "string",
+      "pattern": "^exe_[0-9a-f]{32}$",
+      "description": "Ijro identifikatori. Retry ORIGINAL trace'ga bog'lanadi, ammo YANGI id oladi (§16.1)."
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "status": {
+      "$ref": "#/$defs/status",
+      "description": "Joriy holat. Oraliq holatlar (resolving_context/planning/waiting_for_tool/validating_output) REAL node-progress hodisalaridan hujjatlangan node→faza xaritasi bilan chiqariladi — uydirma emas, lekin kuzatish granularligi node chegarasida."
+    },
+    "actor": {
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "user",
+            "agent",
+            "service",
+            "system"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "agent_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Ijroga xizmat qilgan agent identifikatorlari. graph_version — PIN: ijro davomida o'zgarmaydi.",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "graph_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "agent_template": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "served_version": {
+          "enum": [
+            "stable",
+            "canary"
+          ],
+          "description": "Rollout qarori (sozlanmagan bo'lsa yo'q)."
+        }
+      }
+    },
+    "thread_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Checkpoint kaliti — ijro holatining DURABLE manbasi. `result` bu yerda faqat qisqa ko'rinish; to'liq state checkpoint'da."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "origin": {
+      "$ref": "#/$defs/origin",
+      "description": "AR-1 (ADDITIV): ijro QANDAY qo'zg'atilgani — blueprint §8.3 javob rejimlari. Berilmasa 'direct'. Handoff bilan tug'ilgan bola ijro ZANJIR origin'ini MEROS oladi (u handoff ekani `parent_execution_id` dan ko'rinadi) — 6-chi qiymat o'ylab topilmaydi."
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^cor_[0-9a-f]{32}$",
+      "description": "AR-1 (ADDITIV): agent↔agent zanjirining YAGONA trace kaliti. Ildiz ijro yaratilganda beriladi va handoff bilan tug'ilgan HAR bola AYNI qiymatni oladi — zanjir bitta so'rovga yig'iladi."
+    },
+    "parent_execution_id": {
+      "type": "string",
+      "pattern": "^exe_[0-9a-f]{32}$",
+      "description": "AR-1 (ADDITIV): shu ijroni handoff bilan tug'dirgan OTA ijro. Faqat POST /v1/executions/{id}/handoff qo'yadi — POST /v1/executions da bu maydon YO'Q (tashqi chaqiruvchi zanjir uydira olmasin va chuqurlik chegarasini aylanib o'tmasin)."
+    },
+    "handoff_depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16,
+      "description": "AR-1 (ADDITIV): zanjirdagi handoff chuqurligi (ildiz — 0). EXECUTION_HANDOFF_MAX_DEPTH dan oshsa handoff RAD etiladi (handoff_depth_exceeded) — jim to'xtash yo'q."
+    },
+    "deadline_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "AR-1 (ADDITIV): ijro tanasining QAT'IY deadline'i. Handoff bolasi ota deadline'ini MEROS oladi va uni UZAYTIRA OLMAYDI — budjet zanjir bo'ylab faqat qisqaradi (handoff limitni tiklamaydi)."
+    },
+    "context_refs": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Terminal holatga o'tgan vaqt. Faqat terminal ijroda bo'ladi."
+    },
+    "cancel_requested": {
+      "type": "boolean",
+      "description": "Kooperativ cancel so'ralgan. true bo'lib status hali running bo'lishi MUMKIN — ishlayotgan qadam o'rtasidan uzilmaydi (§16.1)."
+    },
+    "result": {
+      "$ref": "#/$defs/result",
+      "description": "Faqat status=completed bo'lganda. To'liq holat uchun manba — thread_id checkpoint'i."
+    },
+    "error": {
+      "$ref": "#/$defs/error",
+      "description": "Faqat status=failed bo'lganda. Xabar hech qachon sir yoki xom stack tutmaydi."
+    },
+    "waiting_for": {
+      "$ref": "#/$defs/waitingFor",
+      "description": "Faqat status=waiting_for_approval bo'lganda: qaysi interrupt kutilmoqda."
+    },
+    "feedback": {
+      "$ref": "#/$defs/feedback",
+      "description": "POST /v1/executions/{id}/feedback yozgan oxirgi baho."
+    },
+    "operations": {
+      "type": "array",
+      "description": "Bu ijro davomida bajarilgan BIZNES AMALLARI va ularning TASDIQLANGAN taqdiri. ⚠ NEGA MAJBURIY: `status: completed` — MODEL javob berdi degani, AMAL bajarildi degani EMAS. Konnektor timeout bersa amal Ledger'da `UNKNOWN` bo'lib qoladi, xato esa model'ga tool_result sifatida qaytadi va model baribir javob yozishi mumkin. Bu maydonsiz mijoz `completed` ni «bajarildi» deb o'qirdi — aynan platformaning asosiy kafolati (soxta «bajarildi» yo'q) tashqi sirtda YO'QOLARDI. Bo'sh massiv — bu ijroda yozuv amali BO'LMAGAN (faqat o'qish/javob).",
+      "items": {
+        "$ref": "#/$defs/executionOperation"
+      }
+    },
+    "operations_coverage": {
+      "$ref": "#/$defs/operationsCoverage",
+      "description": "`operations` maydoniga ISHONISH MUMKINMI degan savolning javobi. ⚠ NEGA KERAK: `operations: []` ning kontraktdagi ma'nosi QAT'IY — «bu ijroda yozuv amali BO'LMAGAN». Ledger javob bermaganda o'sha bo'sh massivni qaytarish — YOLG'ON: biz amal bo'lmaganini bilmaymiz, biz HECH NARSA bilmaymiz. Shuning uchun qoplama to'liq bo'lmasa `operations` UMUMAN qaytmaydi (pastdagi allOf buni majburlaydi) va sabab shu yerda KOD bilan aytiladi. Ya'ni mijoz uchun uch holat farqlanadi: massiv bor — bilamiz; bo'sh massiv — yozuv amali yo'q; massiv yo'q + `complete:false` — bilmaymiz."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "required": [
+          "operations_coverage"
+        ],
+        "properties": {
+          "operations_coverage": {
+            "required": [
+              "complete"
+            ],
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "operations"
+          ]
+        },
+        "description": "Qoplama to'liq emas — `operations` YO'Q bo'lishi SHART. Bo'sh massiv bilan birga kelgan `complete:false` sxema darajasida RAD etiladi: aynan shu juftlik «yozuv amali yo'q» degan yolg'on ma'noni berardi."
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "completed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "completed_at"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "error",
+          "completed_at"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "waiting_for_approval"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "waiting_for"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "origin": {
+      "enum": [
+        "mention",
+        "observer",
+        "workflow",
+        "scheduled",
+        "direct"
+      ],
+      "default": "direct",
+      "description": "Blueprint §8.3 javob rejimlari. MUHIM: 'observer' rejimda DETERMINISTIK filtr runtime'dan TASHQARIDA (Work'da) turadi — Agent Runtime chat firehose'ga OBUNA BO'LMAYDI, faqat allaqachon filtrlangan hodisani qabul qiladi."
+    },
+    "status": {
+      "enum": [
+        "created",
+        "validating",
+        "resolving_context",
+        "planning",
+        "running",
+        "waiting_for_tool",
+        "waiting_for_approval",
+        "validating_output",
+        "completed",
+        "failed",
+        "cancelled",
+        "expired"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "output"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "output": {
+          "type": "object",
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "message"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Knowledge manbalari (bo'sh — RAG ishlatilmagan yoki degraded)."
+        },
+        "tool_calls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Shu ijroda BAJARILGAN tool nomlari, ijro tartibida."
+        },
+        "proposed_actions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "shadow rejimida BAJARILMAGAN takliflar."
+        },
+        "usage": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Token/cost hisobi (gateway bergan)."
+        },
+        "decision": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Structured decision marshrut metadatasi (matnsiz)."
+        },
+        "handoff": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Operatorga uzatish emissiyasi muvaffaqiyatli bo'lsa."
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "description": "MASHINA kodi (error_kind taksonomiyasi) — matn emas."
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "waitingFor": {
+      "type": "object",
+      "required": [
+        "kind",
+        "interrupt_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "approval",
+            "clarification",
+            "operator"
+          ]
+        },
+        "interrupt_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "required": [
+        "rating",
+        "at",
+        "actor"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rating": {
+          "enum": [
+            "up",
+            "down"
+          ]
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actor": {
+          "type": "object",
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "enum": [
+                "user",
+                "agent",
+                "service",
+                "system"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        }
+      }
+    },
+    "executionOperation": {
+      "type": "object",
+      "required": [
+        "operation_id",
+        "capability_id",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability_id": {
+          "type": "string",
+          "description": "BIZNES amali (`notification.send_sms`), tool nomi EMAS — konnektor almashsa o'zgarmaydi."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARED",
+            "SENT",
+            "ACKNOWLEDGED",
+            "VERIFIED",
+            "UNKNOWN",
+            "RECONCILING",
+            "FAILED",
+            "MANUAL_REVIEW",
+            "CANCELLED"
+          ],
+          "description": "⚡ MIJOZ UCHUN ENG MUHIM MAYDON. `VERIFIED` — manbadan tasdiqlandi, YAGONA «bajarildi» ma'nosini beradigan qiymat. `ACKNOWLEDGED` — konnektor javob berdi (transport), natija TASDIQLANMAGAN. `UNKNOWN` — natija NOMA'LUM: qayta yuborish TAQIQ, reconciliation aniqlaydi. `MANUAL_REVIEW` — mas'ul ko'rigida."
+        },
+        "resource_ref": {
+          "type": "string",
+          "description": "Amal tegadigan obyekt (`card-7731`)."
+        },
+        "verification_method": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "READ_AFTER_WRITE",
+            "DOMAIN_RULE"
+          ],
+          "description": "`NONE` — tasdiqlanmagan. Bunday amal «tasdiqlangan» deb ATALMAYDI."
+        },
+        "verification_evidence": {
+          "type": "string",
+          "description": "Manba holatiga havola/versiya (`crm:lead-42@v7`). Mazmun EMAS."
+        },
+        "terminal_reason": {
+          "type": "string",
+          "description": "FAILED/MANUAL_REVIEW/CANCELLED sabab KODI."
+        }
+      }
+    },
+    "operationsCoverage": {
+      "type": "object",
+      "required": [
+        "complete"
+      ],
+      "additionalProperties": false,
+      "description": "Amal holatining QOPLAMASI. Bitta `complete` bayrog'i — ikkita bir-biriga zid bayroq emas: `degraded` alohida maydon bo'lganda u `complete` bilan kelisha olmay qolish xavfi bor edi.",
+      "properties": {
+        "complete": {
+          "type": "boolean",
+          "description": "true — Ledger javob berdi, `operations` shu ijroning TO'LIQ yozuv amallari ro'yxati. false — Ledger javob bermadi, biz bilmaymiz: `operations` qaytmaydi va sabab `degraded_reasons` da."
+        },
+        "degraded_reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "ledger_unavailable",
+              "ledger_disabled"
+            ]
+          },
+          "description": "MASHINA kodlari, matn emas. ledger_unavailable — Ledger'ga yetib bo'lmadi (timeout/5xx/tarmoq). ledger_disabled — Ledger bu o'rnatmada yoqilmagan (LEDGER_DSN bo'sh), ya'ni amal holati UMUMAN yozilmayapti. Ikkalasi ham operatorga turli ish beradi, shuning uchun bitta kodga yig'ilmadi."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "complete"
+            ],
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "degraded_reasons"
+            ],
+            "description": "Sababsiz «bilmayman» — foydasiz: operator nima qilishini bilmaydi."
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "complete"
+            ],
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "degraded_reasons"
+              ]
+            },
+            "description": "To'liq qoplama degradatsiya sababi bilan kelmaydi — bu ikki maydon zid bo'lgan holat."
+          }
+        }
+      ]
+    }
+  }
+}

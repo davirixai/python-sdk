@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_0123456789abcdef0123456789abcdef",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "seq": 10,
+  "type": "execution.handoff_rejected",
+  "at": "2026-08-04T09:00:15Z",
+  "source": "runtime",
+  "status": "completed",
+  "data": {
+    "code": "handoff_depth_exceeded",
+    "depth": 4,
+    "target": {"graph_id": "mkbank-legal-main", "graph_version": "1.0.0"}
+  }
+}

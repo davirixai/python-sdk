@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_0123456789abcdef0123456789abcde2",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "status": "running",
+  "actor": {"type": "agent", "id": "mkbank-support-main@1.1.0"},
+  "agent_ref": {"graph_id": "mkbank-legal-main", "graph_version": "1.0.0"},
+  "thread_id": "thr_0f3c9e",
+  "origin": "mention",
+  "correlation_id": "cor_0123456789abcdef0123456789abcdef",
+  "parent_execution_id": "exe_0123456789abcdef0123456789abcdef",
+  "handoff_depth": 1,
+  "deadline_at": "2026-08-04T09:15:00Z",
+  "context_refs": [{"type": "deal", "id": "deal_456"}],
+  "created_at": "2026-08-04T09:00:14Z",
+  "updated_at": "2026-08-04T09:00:14Z",
+  "cancel_requested": false
+}

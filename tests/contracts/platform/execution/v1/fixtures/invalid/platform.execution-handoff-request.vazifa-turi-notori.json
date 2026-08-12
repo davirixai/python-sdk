@@ -1,0 +1,5 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "target": {"graph_id": "mkbank-legal-main"},
+  "task": {"type": "voice", "text": "Yangi kirish turi — yangi const, jim shakl o'zgarishi emas"}
+}

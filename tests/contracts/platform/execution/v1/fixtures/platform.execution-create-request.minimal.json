@@ -1,0 +1,5 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "actor": {"type": "user", "id": "user_1"},
+  "input": {"type": "message", "text": "Kredit shartlarini ayting"}
+}

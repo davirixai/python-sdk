@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_0123456789abcdef0123456789abcdef",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "seq": 4,
+  "type": "execution.progress",
+  "at": "2026-08-04T09:00:03Z",
+  "source": "runtime",
+  "status": "waiting_for_tool",
+  "data": {"node": "tool_execution"}
+}

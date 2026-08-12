@@ -1,0 +1,21 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "workspace_id": "ws_1",
+  "actor": {"type": "user", "id": "user_1"},
+  "agent_id": "mkbank-support",
+  "graph_id": "mkbank-support-main",
+  "graph_version": "1.1.0",
+  "input": {"type": "message", "text": "Orient Trade uchun taklif tayyorla"},
+  "context_refs": [
+    {"type": "deal", "id": "deal_1"},
+    {"type": "thread", "id": "thread_1"}
+  ],
+  "idempotency_key": "msg_1-sales_agent",
+  "thread_id": "thr_0f3c9d",
+  "model_profile_id": "chat-quality",
+  "user_id": "user_1",
+  "memory_consent": true,
+  "execution_mode": "active",
+  "channel": "api",
+  "variables": {"contact_name": "Aziz", "deal_amount": "120000"}
+}

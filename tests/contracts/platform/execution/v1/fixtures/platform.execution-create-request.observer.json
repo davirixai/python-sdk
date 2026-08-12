@@ -1,0 +1,10 @@
+{
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "actor": {"type": "service", "id": "work-core"},
+  "input": {"type": "message", "text": "Chegirma 25% ga oshirildi — risk bahosini bering."},
+  "origin": "observer",
+  "graph_id": "mkbank-support-main",
+  "graph_version": "1.1.0",
+  "context_refs": [{"type": "deal", "id": "deal_456"}],
+  "idempotency_key": "evt_9912-observer"
+}

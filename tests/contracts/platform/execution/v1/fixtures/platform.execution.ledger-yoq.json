@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "execution_id": "exe_7c02ab00000000000000000000000003",
+  "tenant_id": "c601ce9c-0000-4000-8000-000000000001",
+  "status": "completed",
+  "actor": {
+    "type": "service",
+    "id": "work-core"
+  },
+  "agent_ref": {
+    "graph_id": "mkbank-support-main",
+    "graph_version": "1.1.0"
+  },
+  "thread_id": "thr_0f3c9d",
+  "created_at": "2026-08-04T09:00:00Z",
+  "updated_at": "2026-08-04T09:00:12Z",
+  "completed_at": "2026-08-04T09:00:12Z",
+  "cancel_requested": false,
+  "result": {
+    "output": {
+      "type": "message",
+      "text": "Mikrokredit yillik 24% dan boshlanadi."
+    },
+    "citations": [],
+    "tool_calls": [
+      "notification_send_sms"
+    ],
+    "proposed_actions": [],
+    "usage": {
+      "input_tokens": 812,
+      "output_tokens": 96
+    }
+  },
+  "operations_coverage": {
+    "complete": false,
+    "degraded_reasons": [
+      "ledger_unavailable"
+    ]
+  }
+}

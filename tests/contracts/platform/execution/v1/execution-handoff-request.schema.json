@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-platform.local/platform/execution/v1/execution-handoff-request",
+  "title": "ExecutionHandoffRequest",
+  "description": "POST /v1/executions/{id}/handoff so'rov konverti (AR-1, blueprint §15 «multi-agent handoff»). Bir agent ijrosi BOSHQA agentga TYPED topshiriq uzatadi: yangi ijro AYNI `/v1/executions` mashinasi bilan yaratiladi (parallel ijro yo'li YO'Q), `parent_execution_id` va zanjirning umumiy `correlation_id` bilan bog'lanadi. QAT'IY qoidalar: (1) ota ijro `completed` bo'lishi SHART — graf o'rtasida handoff dvigatel darajasidagi interrupt talab qiladi, bu to'lqinda YO'Q, shuning uchun ota'ning holati YOLG'ON `waiting_for_agent` ga o'tkazilmaydi (§16.1 terminal-immutability); (2) o'ziga handoff (target = ota agentining o'zi) va zanjirda ALLAQACHON uchragan agent RAD etiladi (handoff_self_loop / handoff_cycle_detected); (3) chuqurlik EXECUTION_HANDOFF_MAX_DEPTH (default 3) dan oshsa handoff_depth_exceeded — jim to'xtash yo'q; (4) budjet MEROS: bola ota deadline'ini oladi va uzaytira olmaydi.",
+  "type": "object",
+  "required": ["tenant_id", "target", "task"],
+  "additionalProperties": false,
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Ota ijro tenanti. Handoff HECH QACHON tenant chegarasini kesib o'tmaydi — begona tenant 404 oladi (mavjudlik oshkor qilinmaydi)."
+    },
+    "target": {
+      "$ref": "#/$defs/target",
+      "description": "Topshiriq beriladigan agent. Kamida bitta selektor MAJBURIY — selektorsiz so'rov jimgina servis default shabloniga tushib ketardi (noma'lum target 422)."
+    },
+    "task": {
+      "$ref": "#/$defs/task",
+      "description": "Typed topshiriq. MVP'da yagona tur — message (yangi tur = yangi const)."
+    },
+    "actor": {
+      "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution-create-request#/$defs/actor",
+      "description": "Topshiriqni bergan aktor. Berilmasa {type: 'agent', id: <ota agent kaliti>} — uydirma emas, ota ijro yozuvidagi haqiqiy identifikator."
+    },
+    "context_refs": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "https://contracts.ai-platform.local/platform/execution/v1/execution-create-request#/$defs/contextRef"
+      },
+      "description": "Bola ijroga o'tadigan biznes-obyekt havolalari. Berilmasa OTA ijroning context_refs'i meros bo'ladi (kontekst yo'qolmaydi)."
+    },
+    "budget": {
+      "$ref": "#/$defs/budget",
+      "description": "Chaqiruvchi so'ragan qoldiq budjet. FAQAT QISQARTIRA oladi: server qiymatni ota qoldig'iga qiskadi (min), hech qachon uzaytirmaydi."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Bola ijro uchun takror-himoya kaliti (tenant ichida). Berilmasa har chaqiruv yangi bola yaratadi."
+    },
+    "model_profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Bola ijro uchun model profili pin'i. Berilmasa target grafining default'i."
+    },
+    "variables": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {"pattern": "^[A-Za-z0-9_]{1,64}$"},
+      "additionalProperties": {"type": "string", "maxLength": 256},
+      "description": "Bola ijroga DATA sifatida beriladigan o'zgaruvchilar (instruksiya emas). PII: loglanmaydi."
+    }
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "anyOf": [
+        {"required": ["agent_id"]},
+        {"required": ["graph_id"]},
+        {"required": ["agent_template"]}
+      ],
+      "dependentRequired": {"graph_version": ["graph_id"]},
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Rollout kaliti (stable/canary qarori)."
+        },
+        "graph_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Graf registri identifikatori."
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "AYNAN shu versiya pinlanadi. graph_id'siz berilishi TAQIQ."
+        },
+        "agent_template": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Kod-shablon nomi (legacy yo'l; graph_id berilganda e'tiborga olinmaydi)."
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["type", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "message"},
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768,
+          "description": "Topshiriq matni — bola ijroning kirish xabari."
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "remaining_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000,
+          "description": "Bola ijroga so'ralgan vaqt (ms). Server min(ota qoldig'i, shu qiymat) ni qo'llaydi."
+        },
+        "remaining_iterations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "description": "Chaqiruvchi kutayotgan qoldiq handoff qadamlari. Server DOIM o'z hisobini (max_depth − depth) qo'llaydi va bu maydon uni OSHIRA olmaydi — faqat kuzatuv/mos-kelmaslik tekshiruvi uchun."
+        }
+      }
+    }
+  }
+}
