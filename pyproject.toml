@@ -9,6 +9,8 @@ description = "Davirix Agent Platform uchun rasmiy Python SDK — 'completed' he
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Davirix" }]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 keywords = ["davirix", "agent", "sdk", "operations", "idempotency"]
 classifiers = [
     "Development Status :: 3 - Alpha",
